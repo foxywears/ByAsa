@@ -1,0 +1,1 @@
+{"name":"byasa-backend","version":"1.0.0","description":"ByAsa Backend API","main":"server.js","dependencies":{"cors":"^2.8.5","express":"^4.18.2","nodemailer":"^9.0.3","uuid":"^9.0.0"}}

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ByAsa — Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+    .stat-card { transition: all 0.2s ease; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="px-6 mb-8">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="font-serif text-lg font-bold text-white">By<span class="text-pink-400">Asa</span></span>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Admin Panel</p>
+      </div>
+      <nav>
+        <a href="#" class="active" onclick="showSection('dashboard')" data-section="dashboard">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          Dashboard
+        </a>
+        <a href="#" onclick="showSection('orders')" data-section="orders">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+          Orders
+        </a>
+        <a href="#" onclick="showSection('subscribers')" data-section="subscribers">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
+          Subscribers
+        </a>
+        <a href="/" target="_blank">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          View Store
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <!-- Dashboard Section -->
+      <div id="section-dashboard">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+            <p class="text-sm text-gray-400">Welcome back! Here's your store overview.</p>
+          </div>
+          <button onclick="refreshData()" class="admin-btn admin-btn-primary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Refresh
+          </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="statsGrid">
+          <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Products</span>
+              <div class="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center"><svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+            </div>
+            <p class="text-3xl font-bold text-gray-800" id="stat-products">—</p>
+            <p class="text-xs text-gray-400 mt-1">Total listings</p>
+          </div>
+          <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Orders</span>
+              <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center"><svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+            </div>
+            <p class="text-3xl font-bold text-gray-800" id="stat-orders">—</p>
+            <p class="text-xs text-gray-400 mt-1">Total received</p>
+          </div>
+          <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Revenue</span>
+              <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center"><svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+            </div>
+            <p class="text-3xl font-bold text-gray-800" id="stat-revenue">—</p>
+            <p class="text-xs text-gray-400 mt-1">Total revenue</p>
+          </div>
+          <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending</span>
+              <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center"><svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+            </div>
+            <p class="text-3xl font-bold text-gray-800" id="stat-pending">—</p>
+            <p class="text-xs text-gray-400 mt-1">Awaiting processing</p>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="admin-card">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-serif text-lg font-bold text-gray-800">Recent Orders</h2>
+            <a href="#" onclick="showSection('orders'); return false;" class="text-sm text-pink-500 hover:text-pink-600 font-medium">View All →</a>
+          </div>
+          <div id="recentOrdersTable">
+            <p class="text-gray-400 text-sm py-4 text-center">No orders yet</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders Section -->
+      <div id="section-orders" style="display:none;">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">Orders</h1>
+            <p class="text-sm text-gray-400">Manage customer orders</p>
+          </div>
+          <button onclick="showSection('dashboard')" class="admin-btn bg-gray-100 text-gray-600 hover:bg-gray-200">← Back to Dashboard</button>
+        </div>
+        <div class="admin-card overflow-x-auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+              <tr><td colspan="7" class="text-center text-gray-400 py-8">No orders yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Subscribers Section -->
+      <div id="section-subscribers" style="display:none;">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">Subscribers</h1>
+            <p class="text-sm text-gray-400">Newsletter subscribers</p>
+          </div>
+          <button onclick="showSection('dashboard')" class="admin-btn bg-gray-100 text-gray-600 hover:bg-gray-200">← Back to Dashboard</button>
+        </div>
+        <div class="admin-card overflow-x-auto">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Email</th><th>Subscribed At</th></tr>
+            </thead>
+            <tbody id="subscribersTableBody">
+              <tr><td colspan="2" class="text-center text-gray-400 py-8">No subscribers yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showSection(section) {
+      document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
+      document.getElementById('section-' + section).style.display = 'block';
+      document.querySelectorAll('.admin-sidebar a').forEach(a => a.classList.remove('active'));
+      document.querySelector(`.admin-sidebar a[data-section="${section}"]`)?.classList.add('active');
+      if (section === 'orders') loadOrders();
+      if (section === 'subscribers') loadSubscribers();
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('stat-products').textContent = data.stats.totalProducts;
+          document.getElementById('stat-orders').textContent = data.stats.totalOrders;
+          document.getElementById('stat-revenue').textContent = '₦' + data.stats.totalRevenue.toLocaleString();
+          document.getElementById('stat-pending').textContent = data.stats.pendingOrders;
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/admin/orders');
+        const data = await res.json();
+        const tbody = document.getElementById('ordersTableBody');
+        if (!data.success || !data.orders.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">No orders yet</td></tr>';
+          return;
+        }
+        let html = '';
+        data.orders.forEach(o => {
+          const statusColor = o.status === 'Pending' ? 'status-pending' : o.status === 'Paid' ? 'status-paid' : 'status-shipped';
+          html += '<tr>' +
+            '<td class="font-mono text-xs">#' + o.id + '</td>' +
+            '<td>' + (o.customerDetails?.name || '—') + '</td>' +
+            '<td>' + (o.customerDetails?.phone || '—') + '</td>' +
+            '<td>' + (o.items?.length || 0) + ' items</td>' +
+            '<td class="font-semibold">₦' + (o.totalAmount || 0).toLocaleString() + '</td>' +
+            '<td><span class="status-badge ' + statusColor + '">' + o.status + '</span></td>' +
+            '<td class="text-xs text-gray-400">' + new Date(o.createdAt).toLocaleDateString() + '</td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = html;
+      } catch(e) { console.error(e); }
+    }
+
+    async function loadSubscribers() {
+      try {
+        const res = await fetch('/api/newsletter/subscribers');
+        const data = await res.json();
+        const tbody = document.getElementById('subscribersTableBody');
+        if (!data.success || !data.subscribers.length) {
+          tbody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-400 py-8">No subscribers yet</td></tr>';
+          return;
+        }
+        let html = '';
+        data.subscribers.forEach(s => {
+          html += '<tr><td>' + s.email + '</td><td class="text-sm text-gray-400">' + new Date(s.subscribedAt).toLocaleString() + '</td></tr>';
+        });
+        tbody.innerHTML = html;
+      } catch(e) { console.error(e); }
+    }
+
+    function refreshData() {
+      loadStats();
+      const visible = document.querySelector('[id^="section-"]:not([style*="none"])');
+      if (visible) {
+        const section = visible.id.replace('section-', '');
+        if (section === 'orders') loadOrders();
+        if (section === 'subscribers') loadSubscribers();
+      }
+    }
+
+    // Init
+    loadStats();
+    setInterval(loadStats, 30000); // Auto-refresh every 30s
+  </script>
+</body>
+</html>
+

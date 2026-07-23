@@ -1,0 +1,17 @@
+{
+  "name": "byasa-store",
+  "version": "1.0.0",
+  "description": "ByAsa Luxury Bag & Accessories E-Commerce Store",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "seed": "node backend/seed.js",
+    "dev": "node backend/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "nodemailer": "^9.0.3",
+    "uuid": "^9.0.0"
+  }
+}
