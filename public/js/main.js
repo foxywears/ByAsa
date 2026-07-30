@@ -60,7 +60,20 @@ const dom = {
   checkoutItems: document.getElementById('checkoutItems'),
   checkoutTotal: document.getElementById('checkoutTotal'),
   checkoutSubmit: document.getElementById('checkoutSubmit'),
+  checkoutSubmitText: document.getElementById('checkoutSubmitText'),
   scrollToTop: document.getElementById('scrollToTop'),
+  bankDetailsCard: document.getElementById('bankDetailsCard'),
+  copyAccBtn: document.getElementById('copyAccBtn'),
+  payBankRadio: document.getElementById('payBankRadio'),
+  payWhatsAppRadio: document.getElementById('payWhatsAppRadio'),
+  orderSuccessModal: document.getElementById('orderSuccessModal'),
+  orderSuccessOverlay: document.getElementById('orderSuccessOverlay'),
+  receiptOrderRef: document.getElementById('receiptOrderRef'),
+  receiptStatus: document.getElementById('receiptStatus'),
+  receiptTotal: document.getElementById('receiptTotal'),
+  receiptRefInline: document.getElementById('receiptRefInline'),
+  sendProofWhatsAppBtn: document.getElementById('sendProofWhatsAppBtn'),
+  closeOrderSuccessBtn: document.getElementById('closeOrderSuccessBtn'),
 };
 
 // ===== HERO SLIDER =====
@@ -438,12 +451,15 @@ function openCheckoutModal() {
     });
     dom.checkoutItems.innerHTML = html;
     dom.checkoutTotal.textContent = cart.getFormattedSubtotal();
+
+    // Default to Bank Transfer
+    if (dom.payBankRadio) dom.payBankRadio.checked = true;
+    updatePaymentMethodUI('Bank Transfer');
     
     dom.checkoutModal.classList.add('active');
     dom.checkoutOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
   } else {
-    // Fallback if checkout modal doesn't exist in DOM
     cart.whatsAppCheckout(null);
   }
 }
@@ -456,7 +472,51 @@ function closeCheckoutModal() {
   }
 }
 
-function handleCheckoutSubmit(e) {
+function updatePaymentMethodUI(method) {
+  const cards = document.querySelectorAll('.payment-method-card');
+  cards.forEach(function(card) {
+    const radio = card.querySelector('input[type="radio"]');
+    if (radio && radio.value === method) {
+      card.classList.add('active', 'border-pink-500', 'bg-pink-50/50');
+      card.classList.remove('border-gray-200');
+    } else {
+      card.classList.remove('active', 'border-pink-500', 'bg-pink-50/50');
+      card.classList.add('border-gray-200');
+    }
+  });
+
+  if (dom.bankDetailsCard) {
+    if (method === 'Bank Transfer') {
+      dom.bankDetailsCard.style.display = 'block';
+      if (dom.checkoutSubmitText) dom.checkoutSubmitText.textContent = 'Place Order & View Payment Info';
+    } else {
+      dom.bankDetailsCard.style.display = 'none';
+      if (dom.checkoutSubmitText) dom.checkoutSubmitText.textContent = 'Proceed to WhatsApp Checkout';
+    }
+  }
+}
+
+function setupPaymentMethodToggle() {
+  const radios = document.querySelectorAll('input[name="paymentMethod"]');
+  radios.forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      updatePaymentMethodUI(this.value);
+    });
+  });
+
+  if (dom.copyAccBtn) {
+    dom.copyAccBtn.addEventListener('click', function() {
+      const accNo = window.BANK_DETAILS ? window.BANK_DETAILS.accountNumber : '0123456789';
+      navigator.clipboard.writeText(accNo).then(function() {
+        showToast('📋 Account Number Copied!', 'success');
+      }).catch(function() {
+        showToast('Account Number: ' + accNo, 'info');
+      });
+    });
+  }
+}
+
+async function handleCheckoutSubmit(e) {
   e.preventDefault();
   const customerDetails = {
     name: dom.checkoutName.value.trim(),
@@ -475,9 +535,88 @@ function handleCheckoutSubmit(e) {
     dom.checkoutPhone.focus();
     return;
   }
-  
-  closeCheckoutModal();
-  cart.whatsAppCheckout(customerDetails);
+
+  const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+  const paymentMethod = selectedPayment ? selectedPayment.value : 'Bank Transfer';
+
+  // Disable button & show spinner
+  const btn = dom.checkoutSubmit;
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing Order...';
+
+  try {
+    // Post order to backend DB
+    const order = await cart.submitOrder(customerDetails, paymentMethod);
+    
+    // Save items copy for WhatsApp receipt before clearing cart
+    const itemsCopy = cart.items.slice();
+    const formattedSubtotal = cart.getFormattedSubtotal();
+    
+    // Clear cart and close checkout modal
+    cart.clearCart();
+    closeCheckoutModal();
+
+    if (paymentMethod === 'WhatsApp') {
+      cart.whatsAppCheckout(customerDetails, order.orderRef);
+      showToast('🌸 Order reference #' + order.orderRef + ' created!', 'success');
+    } else {
+      showOrderSuccessModal(order, customerDetails, itemsCopy, formattedSubtotal);
+    }
+  } catch (err) {
+    console.error('[Checkout Error]', err);
+    showToast(err.message || 'Failed to place order. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+function showOrderSuccessModal(order, customerDetails, items, formattedTotal) {
+  if (!dom.orderSuccessModal) return;
+
+  if (dom.receiptOrderRef) dom.receiptOrderRef.textContent = '#' + order.orderRef;
+  if (dom.receiptRefInline) dom.receiptRefInline.textContent = '#' + order.orderRef;
+  if (dom.receiptTotal) dom.receiptTotal.textContent = formattedTotal || window.formatCurrency(order.totalAmount);
+  if (dom.receiptStatus) {
+    dom.receiptStatus.textContent = order.status || 'Pending Payment';
+  }
+
+  // Setup WhatsApp proof button
+  if (dom.sendProofWhatsAppBtn) {
+    dom.sendProofWhatsAppBtn.onclick = function() {
+      let message = `🌸 *Payment Proof - ByAsa Store* 🌸\n\n`;
+      message += `🔖 *Order Ref:* #${order.orderRef}\n`;
+      message += `👤 *Name:* ${customerDetails.name}\n`;
+      message += `📞 *Phone:* ${customerDetails.phone}\n`;
+      message += `💰 *Amount:* ${formattedTotal}\n`;
+      message += `💳 *Method:* Direct Bank Transfer\n\n`;
+      message += `_Hello, I have made a bank transfer for my order #${order.orderRef}. Please find proof attached._`;
+
+      const url = `https://wa.me/2349163067887?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
+    };
+  }
+
+  // Setup Close button
+  if (dom.closeOrderSuccessBtn) {
+    dom.closeOrderSuccessBtn.onclick = closeOrderSuccessModal;
+  }
+  if (dom.orderSuccessOverlay) {
+    dom.orderSuccessOverlay.onclick = closeOrderSuccessModal;
+  }
+
+  dom.orderSuccessModal.classList.add('active');
+  dom.orderSuccessOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOrderSuccessModal() {
+  if (dom.orderSuccessModal) {
+    dom.orderSuccessModal.classList.remove('active');
+    dom.orderSuccessOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
 }
 
 // ===== Scroll to Top =====
@@ -554,6 +693,7 @@ async function init() {
   new HeroSlider();
   setupScrollToTop();
   setupNewsletter();
+  setupPaymentMethodToggle();
   
   // Fetch products
   try {

@@ -1,6 +1,11 @@
 // ===== ByAsa - Cart Module =====
 
 const WHATSAPP_NUMBER = '2349163067887';
+const BANK_DETAILS = {
+  bankName: 'Guaranty Trust Bank (GTBank)',
+  accountName: 'ByAsa Luxury Concept',
+  accountNumber: '0123456789',
+};
 
 class ByAsaCart {
   constructor() {
@@ -94,11 +99,42 @@ class ByAsaCart {
     this.saveCart();
   }
 
+  // Post order to backend API
+  async submitOrder(customerDetails, paymentMethod = 'Bank Transfer') {
+    if (this.items.length === 0) {
+      throw new Error('Cart is empty');
+    }
+
+    const payload = {
+      customerDetails,
+      items: this.items,
+      totalAmount: this.getSubtotal(),
+      paymentMethod,
+    };
+
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to submit order');
+    }
+    return data.order;
+  }
+
   // Generate WhatsApp message with customer details
-  getWhatsAppMessage(customerDetails) {
-    if (this.items.length === 0) return '';
+  getWhatsAppMessage(customerDetails, orderRef = null, paymentMethod = 'WhatsApp') {
+    if (this.items.length === 0 && !orderRef) return '';
 
     let message = '🌸 *New Order - ByAsa Store* 🌸\n\n';
+
+    if (orderRef) {
+      message += `🔖 *Order Ref:* #${orderRef}\n`;
+      message += `💳 *Payment Method:* ${paymentMethod}\n\n`;
+    }
     
     // Customer details
     if (customerDetails) {
@@ -120,7 +156,10 @@ class ByAsaCart {
     });
 
     message += '─'.repeat(25) + '\n';
-    message += `*Subtotal: ₦${formatNumber(this.getSubtotal())}*\n\n`;
+    message += `*Total Amount: ₦${formatNumber(this.getSubtotal())}*\n\n`;
+    if (paymentMethod === 'Bank Transfer') {
+      message += '_Note: I have completed/initiated bank transfer payment for this order._\n\n';
+    }
     message += '_Thank you for shopping with ByAsa!_ 🙏\n';
 
     return encodeURIComponent(message);
@@ -144,13 +183,13 @@ class ByAsaCart {
   }
 
   // Open WhatsApp checkout with customer details
-  whatsAppCheckout(customerDetails) {
-    if (this.items.length === 0) {
+  whatsAppCheckout(customerDetails, orderRef = null) {
+    if (this.items.length === 0 && !orderRef) {
       showToast('Your cart is empty!', 'error');
       return;
     }
 
-    const message = this.getWhatsAppMessage(customerDetails);
+    const message = this.getWhatsAppMessage(customerDetails, orderRef);
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
     window.open(url, '_blank');
   }
@@ -225,7 +264,9 @@ function showToast(message, type = 'success') {
 // Export for use in other scripts
 window.ByAsaCart = ByAsaCart;
 window.cart = cart;
+window.BANK_DETAILS = BANK_DETAILS;
 window.formatCurrency = formatCurrency;
 window.formatNumber = formatNumber;
 window.showToast = showToast;
+
 

@@ -115,7 +115,7 @@
         <div class="flex items-center justify-between mb-6">
           <div>
             <h1 class="text-2xl font-bold text-gray-800">Orders</h1>
-            <p class="text-sm text-gray-400">Manage customer orders</p>
+            <p class="text-sm text-gray-400">Manage customer orders and update payment status</p>
           </div>
           <button onclick="showSection('dashboard')" class="admin-btn bg-gray-100 text-gray-600 hover:bg-gray-200">← Back to Dashboard</button>
         </div>
@@ -123,17 +123,19 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Order ID</th>
+                <th>Order Ref</th>
                 <th>Customer</th>
                 <th>Phone</th>
+                <th>Payment Method</th>
                 <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="ordersTableBody">
-              <tr><td colspan="7" class="text-center text-gray-400 py-8">No orders yet</td></tr>
+              <tr><td colspan="9" class="text-center text-gray-400 py-8">No orders yet</td></tr>
             </tbody>
           </table>
         </div>
@@ -182,6 +184,45 @@
           document.getElementById('stat-revenue').textContent = '₦' + data.stats.totalRevenue.toLocaleString();
           document.getElementById('stat-pending').textContent = data.stats.pendingOrders;
         }
+
+        // Fetch recent orders for dashboard table
+        const ordersRes = await fetch('/api/admin/orders');
+        const ordersData = await ordersRes.json();
+        const recentDiv = document.getElementById('recentOrdersTable');
+        if (ordersData.success && ordersData.orders.length && recentDiv) {
+          let html = '<div class="overflow-x-auto"><table class="admin-table"><thead><tr><th>Order Ref</th><th>Customer</th><th>Method</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+          ordersData.orders.slice(-5).reverse().forEach(o => {
+            const statusColor = o.status === 'Pending' ? 'bg-amber-100 text-amber-700' : o.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
+            const methodBadge = o.paymentMethod === 'Bank Transfer' ? 'bg-pink-100 text-pink-700' : 'bg-green-100 text-green-700';
+            const displayRef = o.orderRef ? '#' + o.orderRef : '#' + o.id;
+            html += '<tr>' +
+              '<td class="font-mono text-xs font-bold text-gray-800">' + displayRef + '</td>' +
+              '<td>' + (o.customerDetails?.name || '—') + '</td>' +
+              '<td><span class="text-xs font-medium px-2 py-0.5 rounded-full ' + methodBadge + '">' + (o.paymentMethod || 'WhatsApp') + '</span></td>' +
+              '<td class="font-semibold text-sm">₦' + (o.totalAmount || 0).toLocaleString() + '</td>' +
+              '<td><span class="text-xs font-bold px-2 py-0.5 rounded-full ' + statusColor + '">' + o.status + '</span></td>' +
+            '</tr>';
+          });
+          html += '</tbody></table></div>';
+          recentDiv.innerHTML = html;
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+      try {
+        const res = await fetch('/api/orders/' + orderId + '/status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadOrders();
+          loadStats();
+        } else {
+          alert(data.error || 'Failed to update status');
+        }
       } catch(e) { console.error(e); }
     }
 
@@ -191,20 +232,31 @@
         const data = await res.json();
         const tbody = document.getElementById('ordersTableBody');
         if (!data.success || !data.orders.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">No orders yet</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-400 py-8">No orders yet</td></tr>';
           return;
         }
         let html = '';
         data.orders.forEach(o => {
-          const statusColor = o.status === 'Pending' ? 'status-pending' : o.status === 'Paid' ? 'status-paid' : 'status-shipped';
+          const statusColor = o.status === 'Pending' ? 'bg-amber-100 text-amber-700' : o.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
+          const methodBadge = o.paymentMethod === 'Bank Transfer' ? 'bg-pink-100 text-pink-700' : 'bg-green-100 text-green-700';
+          const displayRef = o.orderRef ? '#' + o.orderRef : '#' + o.id;
+
           html += '<tr>' +
-            '<td class="font-mono text-xs">#' + o.id + '</td>' +
-            '<td>' + (o.customerDetails?.name || '—') + '</td>' +
-            '<td>' + (o.customerDetails?.phone || '—') + '</td>' +
-            '<td>' + (o.items?.length || 0) + ' items</td>' +
-            '<td class="font-semibold">₦' + (o.totalAmount || 0).toLocaleString() + '</td>' +
-            '<td><span class="status-badge ' + statusColor + '">' + o.status + '</span></td>' +
+            '<td class="font-mono text-xs font-bold text-gray-800">' + displayRef + '</td>' +
+            '<td><div class="font-medium text-gray-900">' + (o.customerDetails?.name || '—') + '</div><div class="text-[11px] text-gray-400">' + (o.customerDetails?.location || '') + '</div></td>' +
+            '<td class="text-xs">' + (o.customerDetails?.phone || '—') + '</td>' +
+            '<td><span class="text-xs font-medium px-2.5 py-1 rounded-full ' + methodBadge + '">' + (o.paymentMethod || 'WhatsApp') + '</span></td>' +
+            '<td class="text-xs">' + (o.items?.length || 0) + ' items</td>' +
+            '<td class="font-semibold text-sm">₦' + (o.totalAmount || 0).toLocaleString() + '</td>' +
+            '<td><span class="text-xs font-bold px-2.5 py-1 rounded-full ' + statusColor + '">' + o.status + '</span></td>' +
             '<td class="text-xs text-gray-400">' + new Date(o.createdAt).toLocaleDateString() + '</td>' +
+            '<td>' +
+              '<select onchange="updateOrderStatus(\'' + o.id + '\', this.value)" class="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-pink-500">' +
+                '<option value="Pending"' + (o.status === 'Pending' ? ' selected' : '') + '>Pending</option>' +
+                '<option value="Paid"' + (o.status === 'Paid' ? ' selected' : '') + '>Paid</option>' +
+                '<option value="Shipped"' + (o.status === 'Shipped' ? ' selected' : '') + '>Shipped</option>' +
+              '</select>' +
+            '</td>' +
           '</tr>';
         });
         tbody.innerHTML = html;

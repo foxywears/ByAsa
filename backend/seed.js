@@ -3,11 +3,18 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, 'db.json');
 
-// Map of product IDs to actual photo filenames
+// ===== HOW TO ADD YOUR OWN IMAGES =====
+// 1. Drop your image file into the "photos/" folder (e.g., my-bag.jpg)
+// 2. Add a new entry below like:
+//       'my-bag': '/photos/my-bag.jpg',
+// 3. Use it in a product below:
+//       imageUrls: [ photoMap['my-bag'], ... ]
+// 4. Run: cd backend && node seed.js && node server.js
+// ========================================
 const photoMap = {
-  'coach-pink': '/photos/Authentic%20COACH%20CAL51%20TERI%20pink%20shoulder%20bag_.jfif',
-  'coach-heart': '/photos/Coach%20%F0%9F%A9%B7.jfif',
-  'coach-tan': '/photos/Coach%20Teri%20shoulder%20bag%20in%20tan%20brown%20with%20matching%20wallet%F0%9F%A6%8B.jfif',
+  'coach-pink': '/download(2).jfif',
+  'coach-heart': '/photos/bag-heart.jfif',
+  'coach-tan': '/photos/bag-tan.jfif',
 };
 
 const products = [
@@ -202,5 +209,4 @@ const dbData = {
 };
 
 fs.writeFileSync(DB_PATH, JSON.stringify(dbData, null, 2));
-console.log(`✅ Seeded ${products.length} products to db.json with real product images`);
-
+console.log(`✅ Seeded ${products.length} products to db.json`);

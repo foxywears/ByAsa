@@ -53,12 +53,19 @@ function getOrders() {
   return readDB().orders;
 }
 
+function getOrderById(id) {
+  const orders = readDB().orders;
+  return orders.find((o) => o.id === id || o.orderRef === id) || null;
+}
+
 function createOrder(order) {
   const db = readDB();
+  const orderRef = 'BYA-' + Math.floor(10000 + Math.random() * 90000);
   const newOrder = {
     id: generateId(),
+    orderRef,
     ...order,
-    status: 'Pending',
+    status: order.status || 'Pending',
     createdAt: new Date().toISOString(),
   };
   db.orders.push(newOrder);
@@ -68,7 +75,7 @@ function createOrder(order) {
 
 function updateOrderStatus(id, status) {
   const db = readDB();
-  const index = db.orders.findIndex((o) => o.id === id);
+  const index = db.orders.findIndex((o) => o.id === id || o.orderRef === id);
   if (index !== -1) {
     db.orders[index].status = status;
     writeDB(db);
@@ -88,7 +95,9 @@ module.exports = {
   getProductById,
   addProduct,
   getOrders,
+  getOrderById,
   createOrder,
   updateOrderStatus,
 };
+
 

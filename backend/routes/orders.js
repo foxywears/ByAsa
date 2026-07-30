@@ -47,6 +47,21 @@ router.get('/', (req, res) => {
   }
 });
 
+// GET /api/orders/:id - Fetch order by ID or Reference
+router.get('/:id', (req, res) => {
+  try {
+    const order = db.getOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    res.json({ success: true, order });
+  } catch (err) {
+    console.error('[Orders] Error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch order' });
+  }
+});
+
+
 // PATCH /api/orders/:id/status - Update order status
 router.patch('/:id/status', (req, res) => {
   try {
