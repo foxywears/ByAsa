@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// Sanitize string to prevent XSS
+function sanitize(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>"']/g, '');
+}
+
 // POST /api/orders - Create a new order
 router.post('/', (req, res) => {
   try {
@@ -18,9 +24,23 @@ router.post('/', (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid total amount' });
     }
 
+    // Sanitize customer inputs to prevent XSS
+    const sanitizedDetails = {
+      name: sanitize(customerDetails.name),
+      phone: sanitize(customerDetails.phone),
+      location: sanitize(customerDetails.location || ''),
+      note: sanitize(customerDetails.note || ''),
+    };
+
+    // Sanitize item titles
+    const sanitizedItems = items.map(item => ({
+      ...item,
+      title: sanitize(item.title),
+    }));
+
     const order = db.createOrder({
-      customerDetails,
-      items,
+      customerDetails: sanitizedDetails,
+      items: sanitizedItems,
       totalAmount,
       paymentMethod: paymentMethod || 'WhatsApp',
     });

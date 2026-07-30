@@ -2,11 +2,18 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// Sanitize string to prevent XSS
+function sanitize(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>"']/g, '');
+}
+
 // GET /api/products - Fetch all products with optional category and search filters
 router.get('/', (req, res) => {
   try {
     let products = db.getProducts();
-    const { category, search } = req.query;
+    const category = sanitize(req.query.category);
+    const search = sanitize(req.query.search);
 
     // Filter by category
     if (category && category !== 'All') {

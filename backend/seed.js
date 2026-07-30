@@ -12,9 +12,9 @@ const DB_PATH = path.join(__dirname, 'db.json');
 // 4. Run: cd backend && node seed.js && node server.js
 // ========================================
 const photoMap = {
-  'coach-pink': '/download(2).jfif',
+  'coach-pink': '/photos/bag-pink.jfif',
   'coach-heart': '/photos/bag-heart.jfif',
-  'coach-tan': '/photos/bag-tan.jfif',
+
 };
 
 const products = [
