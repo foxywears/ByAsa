@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
@@ -11,7 +11,7 @@ function sanitize(str) {
 // POST /api/orders - Create a new order
 router.post('/', (req, res) => {
   try {
-    const { customerDetails, items, totalAmount, paymentMethod } = req.body;
+    const { customerDetails, items, totalAmount, paymentMethod, status } = req.body;
 
     // Validation
     if (!items || !items.length) {
@@ -27,6 +27,7 @@ router.post('/', (req, res) => {
     // Sanitize customer inputs to prevent XSS
     const sanitizedDetails = {
       name: sanitize(customerDetails.name),
+      email: sanitize(customerDetails.email || ''),
       phone: sanitize(customerDetails.phone),
       location: sanitize(customerDetails.location || ''),
       note: sanitize(customerDetails.note || ''),
@@ -38,11 +39,16 @@ router.post('/', (req, res) => {
       title: sanitize(item.title),
     }));
 
+    // Validate status
+    const validStatuses = ['Pending', 'Paid', 'Shipped'];
+    const orderStatus = validStatuses.includes(status) ? status : 'Pending';
+
     const order = db.createOrder({
       customerDetails: sanitizedDetails,
       items: sanitizedItems,
       totalAmount,
       paymentMethod: paymentMethod || 'WhatsApp',
+      status: orderStatus,
     });
 
     res.status(201).json({

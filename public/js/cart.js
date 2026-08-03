@@ -99,8 +99,8 @@ class ByAsaCart {
     this.saveCart();
   }
 
-  // Post order to backend API
-  async submitOrder(customerDetails, paymentMethod = 'Bank Transfer') {
+// Post order to backend API
+  async submitOrder(customerDetails, paymentMethod = 'Bank Transfer', status = 'Pending') {
     if (this.items.length === 0) {
       throw new Error('Cart is empty');
     }
@@ -110,6 +110,7 @@ class ByAsaCart {
       items: this.items,
       totalAmount: this.getSubtotal(),
       paymentMethod,
+      status,
     };
 
     const response = await fetch('/api/orders', {

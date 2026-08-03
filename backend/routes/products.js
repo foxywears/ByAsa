@@ -16,10 +16,12 @@ router.get('/', (req, res) => {
     const search = sanitize(req.query.search);
 
     // Filter by category
-    if (category && category !== 'All') {
+if (category && category !== 'All') {
       const categoryMap = {
         'Mini Bags': 'Mini Bags',
         'Totes': 'Totes',
+        'Handbags': 'Handbags',
+        'Sneakers': 'Sneakers',
         'Accessories': 'Accessories',
         'On Sale': 'On Sale',
       };

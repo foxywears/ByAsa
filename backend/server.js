@@ -91,6 +91,16 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'ByAsa API is running', timestamp: new Date().toISOString() });
 });
 
+// Serve storefront homepage
+app.get('/', (req, res) => {
+  const indexHTML = path.join(__dirname, '..', 'public', 'index.html');
+  if (fs.existsSync(indexHTML)) {
+    res.sendFile(indexHTML);
+  } else {
+    res.status(404).send('Storefront not found');
+  }
+});
+
 // Serve admin dashboard HTML
 app.get('/admin', (req, res) => {
   const adminHTML = path.join(__dirname, '..', 'public', 'admin.html');

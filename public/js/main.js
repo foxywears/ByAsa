@@ -1,4 +1,4 @@
-// ===== ByAsa - Main Application =====
+ // ===== ByAsa - Main Application =====
 
 let allProducts = [];
 let currentCategory = 'All';
@@ -53,7 +53,8 @@ const dom = {
   checkoutOverlay: document.getElementById('checkoutOverlay'),
   checkoutClose: document.getElementById('checkoutClose'),
   checkoutForm: document.getElementById('checkoutForm'),
-  checkoutName: document.getElementById('checkoutName'),
+checkoutName: document.getElementById('checkoutName'),
+  checkoutEmail: document.getElementById('checkoutEmail'),
   checkoutPhone: document.getElementById('checkoutPhone'),
   checkoutLocation: document.getElementById('checkoutLocation'),
   checkoutNote: document.getElementById('checkoutNote'),
@@ -64,6 +65,7 @@ const dom = {
   scrollToTop: document.getElementById('scrollToTop'),
   bankDetailsCard: document.getElementById('bankDetailsCard'),
   copyAccBtn: document.getElementById('copyAccBtn'),
+  payCardRadio: document.getElementById('payCardRadio'),
   payBankRadio: document.getElementById('payBankRadio'),
   payWhatsAppRadio: document.getElementById('payWhatsAppRadio'),
   orderSuccessModal: document.getElementById('orderSuccessModal'),
@@ -80,9 +82,9 @@ const dom = {
 class HeroSlider {
   constructor() {
     this.slides = [
-      { img: '/api/placeholder/hero-luxury-bags', title: 'Spring Collection 2025', subtitle: 'Discover the elegance of ByAsa', badge: 'NEW ARRIVALS' },
-      { img: '/api/placeholder/hero-mini-bags', title: 'Mini Bags, Big Style', subtitle: 'Compact luxury for every occasion', badge: 'SHOP MINI' },
-      { img: '/api/placeholder/hero-accessories', title: 'Accessories That Shine', subtitle: 'Complete your look with our curated pieces', badge: 'EXPLORE' },
+      { img: '/photos/hermes.jpeg', title: 'Luxury Handbags', subtitle: 'Discover the elegance of ByAsa', badge: 'NEW ARRIVALS' },
+      { img: '/photos/bag-heart.jfif', title: 'Mini Bags, Big Style', subtitle: 'Compact luxury for every occasion', badge: 'SHOP MINI' },
+      { img: '/photos/adidaswhite.jpeg', title: 'Sneakers & Streetwear', subtitle: 'Complete your look with our curated pieces', badge: 'EXPLORE' },
     ];
     this.currentIndex = 0;
     this.touchStartX = 0;
@@ -172,7 +174,7 @@ function showLoadingSkeleton() {
 
 // ===== Category Chips =====
 function renderCategoryChips() {
-  const cats = ['All', 'Mini Bags', 'Totes', 'Accessories', 'On Sale'];
+  const cats = ['All', 'Mini Bags', 'Totes', 'Handbags', 'Sneakers', 'Accessories', 'On Sale'];
   let html = '';
   for (let i = 0; i < cats.length; i++) {
     const c = cats[i];
@@ -452,9 +454,9 @@ function openCheckoutModal() {
     dom.checkoutItems.innerHTML = html;
     dom.checkoutTotal.textContent = cart.getFormattedSubtotal();
 
-    // Default to Bank Transfer
-    if (dom.payBankRadio) dom.payBankRadio.checked = true;
-    updatePaymentMethodUI('Bank Transfer');
+// Default to Card (Paystack)
+    if (dom.payCardRadio) dom.payCardRadio.checked = true;
+    updatePaymentMethodUI('Card');
     
     dom.checkoutModal.classList.add('active');
     dom.checkoutOverlay.classList.add('active');
@@ -485,10 +487,13 @@ function updatePaymentMethodUI(method) {
     }
   });
 
-  if (dom.bankDetailsCard) {
+if (dom.bankDetailsCard) {
     if (method === 'Bank Transfer') {
       dom.bankDetailsCard.style.display = 'block';
       if (dom.checkoutSubmitText) dom.checkoutSubmitText.textContent = 'Place Order & View Payment Info';
+    } else if (method === 'Card') {
+      dom.bankDetailsCard.style.display = 'none';
+      if (dom.checkoutSubmitText) dom.checkoutSubmitText.textContent = 'Pay Securely with Card';
     } else {
       dom.bankDetailsCard.style.display = 'none';
       if (dom.checkoutSubmitText) dom.checkoutSubmitText.textContent = 'Proceed to WhatsApp Checkout';
@@ -520,6 +525,7 @@ async function handleCheckoutSubmit(e) {
   e.preventDefault();
   const customerDetails = {
     name: dom.checkoutName.value.trim(),
+    email: dom.checkoutEmail ? dom.checkoutEmail.value.trim() : '',
     phone: dom.checkoutPhone.value.trim(),
     location: dom.checkoutLocation.value.trim(),
     note: dom.checkoutNote.value.trim(),
@@ -537,7 +543,7 @@ async function handleCheckoutSubmit(e) {
   }
 
   const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
-  const paymentMethod = selectedPayment ? selectedPayment.value : 'Bank Transfer';
+  const paymentMethod = selectedPayment ? selectedPayment.value : 'Card';
 
   // Disable button & show spinner
   const btn = dom.checkoutSubmit;
@@ -546,7 +552,56 @@ async function handleCheckoutSubmit(e) {
   btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing Order...';
 
   try {
-    // Post order to backend DB
+    // If Card payment selected, open Paystack popup
+    if (paymentMethod === 'Card') {
+      if (!customerDetails.email || !customerDetails.email.includes('@')) {
+        showToast('Please enter a valid email for card payment', 'error');
+        if (dom.checkoutEmail) dom.checkoutEmail.focus();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        return;
+      }
+
+      const totalAmount = cart.getSubtotal();
+      const orderRef = 'BYA-' + Math.floor(10000 + Math.random() * 90000);
+
+      const handler = PaystackPop.setup({
+        key: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your Paystack public key
+        email: customerDetails.email,
+        amount: totalAmount * 100, // Paystack uses kobo
+        currency: 'NGN',
+        ref: orderRef,
+        metadata: {
+          custom_fields: [
+            { display_name: 'Full Name', variable_name: 'full_name', value: customerDetails.name },
+            { display_name: 'Phone', variable_name: 'phone', value: customerDetails.phone },
+            { display_name: 'Location', variable_name: 'location', value: customerDetails.location || 'N/A' }
+          ]
+        },
+        callback: async function(response) {
+          // Payment successful - create order with Paid status
+          try {
+            const order = await cart.submitOrder(customerDetails, 'Card', 'Paid');
+            const itemsCopy = cart.items.slice();
+            const formattedSubtotal = cart.getFormattedSubtotal();
+            cart.clearCart();
+            closeCheckoutModal();
+            showOrderSuccessModal(order, customerDetails, itemsCopy, formattedSubtotal, 'Paid');
+            showToast('✅ Payment successful! Order #' + order.orderRef + ' confirmed.', 'success');
+          } catch (err) {
+            console.error('[Checkout Error]', err);
+            showToast(err.message || 'Order created but failed to confirm. Please contact us on WhatsApp.', 'error');
+          }
+        },
+        onClose: function() {
+          showToast('Payment window closed. You can try again.', 'info');
+        }
+      });
+      handler.openIframe();
+      return;
+    }
+
+    // Post order to backend DB (Bank Transfer / WhatsApp)
     const order = await cart.submitOrder(customerDetails, paymentMethod);
     
     // Save items copy for WhatsApp receipt before clearing cart
@@ -572,14 +627,24 @@ async function handleCheckoutSubmit(e) {
   }
 }
 
-function showOrderSuccessModal(order, customerDetails, items, formattedTotal) {
+function showOrderSuccessModal(order, customerDetails, items, formattedTotal, statusOverride) {
   if (!dom.orderSuccessModal) return;
 
   if (dom.receiptOrderRef) dom.receiptOrderRef.textContent = '#' + order.orderRef;
   if (dom.receiptRefInline) dom.receiptRefInline.textContent = '#' + order.orderRef;
   if (dom.receiptTotal) dom.receiptTotal.textContent = formattedTotal || window.formatCurrency(order.totalAmount);
+  
+  const finalStatus = statusOverride || order.status || 'Pending';
   if (dom.receiptStatus) {
-    dom.receiptStatus.textContent = order.status || 'Pending Payment';
+    dom.receiptStatus.textContent = finalStatus;
+    dom.receiptStatus.className = finalStatus === 'Paid' ? 'text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full' : 'text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full';
+  }
+
+  // Hide bank section for card payments
+  const bankSection = document.getElementById('receiptBankSection');
+  if (bankSection) {
+    const isCard = (order.paymentMethod === 'Card' || finalStatus === 'Paid');
+    bankSection.style.display = isCard ? 'none' : 'block';
   }
 
   // Setup WhatsApp proof button
@@ -590,8 +655,16 @@ function showOrderSuccessModal(order, customerDetails, items, formattedTotal) {
       message += `👤 *Name:* ${customerDetails.name}\n`;
       message += `📞 *Phone:* ${customerDetails.phone}\n`;
       message += `💰 *Amount:* ${formattedTotal}\n`;
-      message += `💳 *Method:* Direct Bank Transfer\n\n`;
-      message += `_Hello, I have made a bank transfer for my order #${order.orderRef}. Please find proof attached._`;
+const method = order.paymentMethod || 'Bank Transfer';
+      const methodLabel = method === 'Card' ? 'Card (Paystack)' : method === 'WhatsApp' ? 'WhatsApp Order' : 'Bank Transfer';
+      const methodMsg = method === 'Card'
+        ? `_Hello, I just paid for my order #${order.orderRef} via Card (Paystack). Please find proof attached._`
+        : method === 'WhatsApp'
+          ? `_Hello, I placed my order #${order.orderRef} via WhatsApp. Please confirm my payment._`
+          : `_Hello, I have made a bank transfer for my order #${order.orderRef}. Please find proof attached._`;
+
+message += `💳 *Method:* ${methodLabel} \n\n`;
+      message += methodMsg;
 
       const url = `https://wa.me/2349163067887?text=${encodeURIComponent(message)}`;
       window.open(url, '_blank');
